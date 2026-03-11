@@ -1,6 +1,8 @@
-# Crypto P&L Calculator (for CoinDCX trades)
+# Crypto P&L Analyzer (for CoinDCX)
 
-A Python script to calculate cryptocurrency profit and loss statements compliant with Indian VDA (Virtual Digital Asset) taxation under Section 115BBH of the Income Tax Act, 1961. This script is provided as-is for informational purposes only and should not be considered as tax advice.
+A Python script to calculate cryptocurrency profit and loss statements compliant with Indian VDA (Virtual Digital Asset) taxation under Section 115BBH of the Income Tax Act, 1961.
+
+**This script is provided as-is for informational purposes only and should not be considered as tax advice.**
 
 ## Features
 
@@ -16,8 +18,20 @@ A Python script to calculate cryptocurrency profit and loss statements compliant
 
 ## Requirements
 
+**Pre-requisite**
+
+`uv` - https://docs.astral.sh/uv/getting-started/installation/
+
+Create a virtual environment
+
 ```bash
-pip install pandas openpyxl
+uv sync
+```
+
+Source the virtual environment
+
+```bash
+source .venv/bin/activate
 ```
 
 ## Usage
