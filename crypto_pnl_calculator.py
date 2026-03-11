@@ -2,9 +2,6 @@
 """
 Crypto Asset P&L Calculator for Indian VDA Taxation (Section 115BBH)
 Implements FIFO inventory accounting for crypto transactions
-
-Author: Crypto Trade P&L System
-Date: 2026-03-11
 """
 
 import pandas as pd
@@ -173,7 +170,6 @@ class CryptoPnLCalculator:
             try:
                 date = pd.to_datetime(row['Trade Completion time'])
                 crypto_pair = str(row['Crypto Pair']).strip()
-                base_currency = str(row['Base currency']).strip()
                 side = str(row['Side (Buy/Sell)']).strip().upper()
                 quantity = float(row['Quantity'])
                 price_per_unit = float(row['Avg Buying/Selling Price(in base currency)'])
