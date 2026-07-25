@@ -313,7 +313,7 @@ Find the first three lines of the `run()` body and put the call above them.
 uv run pytest -q
 ```
 
-Expected: 29 passed (24 existing + 5 new).
+Expected: 31 passed (24 existing + 7 new — the parametrized phrase test contributes 5).
 
 - [ ] **Step 6: Create `DISCLAIMER.md`**
 
@@ -1311,7 +1311,7 @@ Expected: all pass. If `test_page_is_self_contained` fails, an external URL crep
 uv run pytest -q
 ```
 
-Expected: 42 passed (24 + 5 + 13).
+Expected: 43 passed (24 + 7 + 12).
 
 - [ ] **Step 8: Commit**
 
@@ -1557,7 +1557,7 @@ Expected: `broken links: none`.
 uv run pytest -q
 ```
 
-Expected: 42 passed.
+Expected: 43 passed.
 
 - [ ] **Step 4: Commit and push**
 
@@ -1630,4 +1630,5 @@ verification steps, which is more correct than transcribing them.
 **Type consistency** — `DISCLAIMER` and `print_disclaimer()` are defined in Task 2 Step 3 and
 used with those exact names in Task 2 Steps 1 and 4. The canonical URL, repo slug and
 `Copyright 2026 Sanket Daru` are identical everywhere they appear. Test counts accumulate
-consistently: 24 → 29 → 42.
+consistently: 24 → 31 (7 new in Task 2, of which 5 come from one parametrized test) → 43
+(12 new in Task 5).
