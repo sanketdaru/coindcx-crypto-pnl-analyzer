@@ -16,6 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Assert no spreadsheet is tracked
+        run: |
+          if git ls-files '*.xlsx' '*.xls' '*.xlsm' '*.csv' | grep .; then
+            echo "::error::A spreadsheet is tracked in git. These files contain personal data."
+            exit 1
+          fi
+          echo "No spreadsheet tracked."
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -29,11 +37,3 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -v
-
-      - name: Assert no spreadsheet is tracked
-        run: |
-          if git ls-files '*.xlsx' '*.xls' '*.xlsm' '*.csv' | grep .; then
-            echo "::error::A spreadsheet is tracked in git. These files contain personal data."
-            exit 1
-          fi
-          echo "No spreadsheet tracked."

@@ -80,15 +80,15 @@ footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;color
   </div>
   <div class="card">
     <h3>USDT pairs handled properly</h3>
-    <p>Buying ETH with USDT is a disposal of USDT and a separate acquisition of ETH. Both legs are recorded, and the USDT gain is not silently lost.</p>
+    <p>Buying ETH with USDT is a disposal of USDT and a separate acquisition of ETH. The tool records both legs, rather than tracking only the target asset and leaving the USDT side out.</p>
   </div>
   <div class="card">
-    <h3>Gross figures, per the section</h3>
-    <p>Fees are tracked for reference but excluded from cost basis and proceeds, as Section 115BBH requires. TDS is reported separately.</p>
+    <h3>Gross figures, not net</h3>
+    <p>Fees are tracked for reference but excluded from cost basis and proceeds, matching the gross-amount treatment described in Section 115BBH. TDS is reported separately.</p>
   </div>
   <div class="card">
     <h3>Fails loudly</h3>
-    <p>A row it cannot read stops the run and names the sheet and row. It will not quietly drop a purchase and overstate your gain.</p>
+    <p>A row it cannot read stops the run and names the sheet and row, rather than being silently skipped in a way that would overstate your gain.</p>
   </div>
 </div>
 
@@ -142,7 +142,7 @@ source .venv/bin/activate</code></pre>
 
 <details>
 <summary>How are USDT trading pairs handled?</summary>
-<p>They are correctly treated as two taxable events. Buying ETH with USDT is a disposal of USDT, which realises a gain or loss on that USDT, and separately an acquisition of ETH at the INR value of the trade. Tools that ignore the first leg understate your taxable income.</p>
+<p>They are recorded as two taxable events. Buying ETH with USDT is treated as a disposal of USDT, which realises a gain or loss on that USDT, and separately as an acquisition of ETH at the INR value of the trade. Tools that ignore the first leg understate your taxable income.</p>
 </details>
 
 <details>
@@ -216,7 +216,7 @@ source .venv/bin/activate</code></pre>
     },
     {
       "@type": "Question",
-      "name": "What is FIFO and why does it matter for crypto tax?",
+      "name": "What is FIFO and why does it matter?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "First In, First Out means that when you sell part of a holding, the oldest units you bought are treated as the ones sold. Since those usually have a different purchase price from your most recent buys, the method you choose changes your cost basis and therefore your taxable gain. This tool uses FIFO throughout and offers no alternative method."
@@ -227,12 +227,12 @@ source .venv/bin/activate</code></pre>
       "name": "How are USDT trading pairs handled?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "They are correctly treated as two taxable events. Buying ETH with USDT is a disposal of USDT, which realises a gain or loss on that USDT, and separately an acquisition of ETH at the INR value of the trade. Tools that ignore the first leg understate your taxable income."
+        "text": "They are recorded as two taxable events. Buying ETH with USDT is treated as a disposal of USDT, which realises a gain or loss on that USDT, and separately as an acquisition of ETH at the INR value of the trade. Tools that ignore the first leg understate your taxable income."
       }
     },
     {
       "@type": "Question",
-      "name": "Is my crypto transaction data uploaded anywhere?",
+      "name": "Is my data uploaded anywhere?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "No. The tool runs entirely on your own machine. It opens no network connections, requires no account or API key, and sends no telemetry. Your export is read from disk and the report is written back to disk. The source is open, so you can verify this yourself."
@@ -248,7 +248,7 @@ source .venv/bin/activate</code></pre>
     },
     {
       "@type": "Question",
-      "name": "What transactions does this calculator not handle?",
+      "name": "What does it not handle?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Airdrops, staking rewards, mining income, hard forks, gifts, P2P trades, futures, margin and lending are all out of scope, as are deposits, withdrawals and transfers between exchanges or wallets. Cost basis is derived only from purchases present in your file, so an incomplete export will overstate your gain."
@@ -256,7 +256,7 @@ source .venv/bin/activate</code></pre>
     },
     {
       "@type": "Question",
-      "name": "Is this crypto tax calculator free?",
+      "name": "Is it free?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Yes. It is open source under the Apache License 2.0, free to use, modify and redistribute, including commercially. There is no paid tier and no support contract."
