@@ -1,21 +1,63 @@
-# Crypto P&L Analyzer (for CoinDCX)
+# India Crypto Tax Calculator
 
-A Python script to calculate cryptocurrency profit and loss statements compliant with Indian VDA (Virtual Digital Asset) taxation under Section 115BBH of the Income Tax Act, 1961.
+**Turn a CoinDCX trade export into a FIFO profit-and-loss report for Indian Virtual Digital Asset taxation under Section 115BBH.**
 
-**This script is provided as-is for informational purposes only and should not be considered as tax advice.**
+[![CI](https://github.com/sanketdaru/india-crypto-tax-calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/sanketdaru/india-crypto-tax-calculator/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+
+📖 **[Website and FAQ](https://sanketdaru.github.io/india-crypto-tax-calculator/)**
+
+> ## ⚠️ NOT TAX ADVICE
+>
+> This is free software provided **with no warranty**, written by someone who is
+> **not a tax professional**. Its output is a starting point for a conversation
+> with a qualified professional, not a finished computation. **You alone are
+> responsible for what you file.**
+>
+> **[Read the full disclaimer and the list of what this tool does not
+> handle](DISCLAIMER.md)** before using any of these numbers.
+
+Indian tax on Virtual Digital Assets is charged at a flat 30% on gains under
+Section 115BBH of the Income Tax Act, 1961, with no deduction other than cost of
+acquisition and no set-off of losses. This script reads the Excel trade report
+you download from CoinDCX and computes that for you.
+
+**Your data never leaves your machine.** No account, no API key, no upload, no
+telemetry. It reads a file from your disk and writes a report back to your disk.
 
 ## Features
 
-- ✅ **FIFO Inventory Accounting**: Uses First In First Out method for cost basis calculation
-- ✅ **USDT Pair Transformation**: Automatically handles implicit disposal events when trading with USDT
+- **FIFO inventory accounting** — oldest holdings disposed first, cost basis
+  tracked lot by lot
+- **USDT pair transformation** — a USDT-quoted trade is two taxable events, and
+  both are recorded
   - `ETHUSDT BUY` → SELL USDT (P&L event) + BUY ETH
   - `ETHUSDT SELL` → SELL ETH (P&L event) + BUY USDT
-- ✅ **Section 115BBH Compliance**: Fees are NOT included in cost basis or proceeds (as per Indian VDA tax rules)
-- ✅ **Multi-Sheet Excel Output**: Generates comprehensive reports with transaction log, crypto-wise summary, and overall summary
-- ✅ **Indian Financial Year Support**: Automatically detects and reports for April-March financial year
-- ✅ **Header Variant Tolerance**: Accepts the different column names CoinDCX has shipped across export versions (`Trade Completion time` / `Transaction time`, `*TDS(in INR)` / `**TDS(in INR)`) and every pair style (`BTCUSDT`, `BTC-USDT`, `BTC/USDT`)
-- ✅ **Fail-Loud Parsing**: An unreadable row aborts the run instead of being silently dropped — a dropped buy would understate cost basis and overstate taxable gains
-- ✅ **Accurate USDT Tracking**: Properly tracks USDT cost basis for P&L calculations
+- **Section 115BBH compliance** — fees excluded from cost basis and proceeds;
+  TDS tracked separately for reference
+- **Header variant tolerance** — accepts the different column names CoinDCX has
+  shipped across export versions, and every pair style (`BTCUSDT`, `BTC-USDT`,
+  `BTC/USDT`)
+- **Fail-loud parsing** — an unreadable row aborts the run instead of being
+  silently dropped, because a dropped purchase understates cost basis and
+  overstates your taxable gain
+- **Multi-sheet Excel output** — transaction log, per-asset summary, headline
+  totals
+- **Indian financial year support** — April to March, detected automatically
+
+## Contents
+
+- [Requirements](#requirements) · [Usage](#usage) · [Input File Format](#input-file-format)
+- [Output Reports](#output-reports) · [Key Tax Rules](#key-tax-rules-section-115bbh)
+- [Troubleshooting](#troubleshooting) · [Technical Notes](#technical-notes)
+- [Disclaimer](DISCLAIMER.md) · [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md)
+
+## Not affiliated with CoinDCX
+
+This project is not affiliated with, endorsed by or sponsored by CoinDCX or
+Neblio Technologies Private Limited. "CoinDCX" identifies the trade report file
+format this software reads. All trademarks belong to their respective owners.
 
 ## Requirements
 
@@ -338,7 +380,3 @@ TDS is levied on the *transfer* of a VDA, so it is recorded against the disposal
 - `ETHUSDT SELL` → TDS sits on the **ETH SELL** leg
 
 Totals are unaffected; only the per-crypto breakdown differs.
-
-## Disclaimer
-
-This script is provided as-is for informational purposes only and should not be considered as tax advice. Users are responsible for ensuring the accuracy of their tax filings and should consult with qualified tax professionals.
