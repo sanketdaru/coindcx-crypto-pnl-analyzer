@@ -18,6 +18,27 @@ QUANTITY_EPSILON = 1e-8
 # Quote currencies used to split a trading pair when the export does not tell us
 KNOWN_QUOTE_CURRENCIES = ('USDT', 'USDC', 'INR', 'BTC', 'ETH')
 
+DISCLAIMER = """\
+================================================================================
+  NOT TAX ADVICE - READ BEFORE USING THIS OUTPUT
+================================================================================
+  This software is provided as-is, with no warranty, and its author is not a
+  tax professional. Its output is a starting point, not a filing.
+
+  Verify every figure with a qualified tax professional before you file.
+  You alone are responsible for what you file and for any tax, interest or
+  penalty arising from it.
+
+  Limitations, in full: DISCLAIMER.md
+  https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/DISCLAIMER.md
+================================================================================
+"""
+
+
+def print_disclaimer() -> None:
+    """Print the disclaimer. Called on every run - a user cannot skip past it."""
+    print(DISCLAIMER)
+
 
 class MissingColumnError(KeyError):
     """Raised when a required column is absent from a CoinDCX export sheet"""
@@ -578,6 +599,8 @@ class CryptoPnLCalculator:
     
     def run(self, output_file: Optional[str] = None) -> str:
         """Main execution flow"""
+        print_disclaimer()
+
         print("=" * 80)
         print("CRYPTO ASSET P&L CALCULATOR - FIFO METHOD (Section 115BBH)")
         print("=" * 80)
