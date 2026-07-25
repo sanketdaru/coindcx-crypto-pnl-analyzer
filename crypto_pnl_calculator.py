@@ -12,6 +12,75 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+# Quantities below this are treated as zero (crypto quantities carry up to 8 decimals)
+QUANTITY_EPSILON = 1e-8
+
+# Quote currencies used to split a trading pair when the export does not tell us
+KNOWN_QUOTE_CURRENCIES = ('USDT', 'USDC', 'INR', 'BTC', 'ETH')
+
+
+class MissingColumnError(KeyError):
+    """Raised when a required column is absent from a CoinDCX export sheet"""
+
+
+class InsufficientHoldingsError(ValueError):
+    """Raised when a disposal exceeds the quantity currently held"""
+
+
+def _normalize_column(name) -> str:
+    """Normalize a header for matching: lowercase, no whitespace, no footnote asterisks"""
+    return ''.join(str(name).split()).replace('*', '').lower()
+
+
+def resolve_column(df: pd.DataFrame, candidates: Tuple[str, ...], label: str,
+                   required: bool = True) -> Optional[str]:
+    """
+    Find the actual column name in `df` matching any of `candidates`.
+
+    CoinDCX has shipped several header variants of the same export (e.g.
+    'Trade Completion time' vs 'Transaction time', '*TDS(in INR)' vs
+    '**TDS(in INR)'), so match on a normalized form and accept aliases.
+    """
+    lookup = {_normalize_column(c): c for c in df.columns}
+    for candidate in candidates:
+        actual = lookup.get(_normalize_column(candidate))
+        if actual is not None:
+            return actual
+    if not required:
+        return None
+    raise MissingColumnError(
+        f"Could not find the '{label}' column. Tried {list(candidates)}. "
+        f"Sheet has: {list(df.columns)}"
+    )
+
+
+def resolve_symbol(pair: str, base_currency: Optional[str]) -> Tuple[str, str]:
+    """
+    Split a trading pair into (target symbol, quote currency).
+
+    Handles every separator style CoinDCX has used: 'BTC-USDT', 'BTC/USDT',
+    'BTC_USDT' and 'BTCUSDT'. A plain str.replace() is wrong here - it leaves
+    'BTC-' for 'BTC-USDT' and would mangle a pair such as 'USDTINR'.
+    """
+    pair = str(pair).strip().upper()
+    base = str(base_currency).strip().upper() if base_currency and pd.notna(base_currency) else ''
+
+    for separator in ('-', '/', '_'):
+        if separator in pair:
+            target, _, quote = pair.rpartition(separator)
+            if target and (not base or quote == base):
+                return target, quote
+
+    if base and pair.endswith(base) and len(pair) > len(base):
+        return pair[:-len(base)], base
+
+    for quote in KNOWN_QUOTE_CURRENCIES:
+        if pair.endswith(quote) and len(pair) > len(quote):
+            return pair[:-len(quote)], quote
+
+    raise ValueError(f"Cannot determine target crypto for pair '{pair}' (base currency '{base}')")
+
+
 class Transaction:
     """Represents a single crypto transaction"""
     
@@ -51,48 +120,49 @@ class FIFOInventory:
         """
         Dispose holdings using FIFO method
         Returns: (total_cost_basis, list_of_disposals)
+
+        The plan is built before anything is mutated, so a shortfall raises
+        without consuming inventory - otherwise a single oversell would silently
+        wipe out lots that later, valid sells still need for their cost basis.
         """
-        if crypto not in self.holdings or not self.holdings[crypto]:
-            raise ValueError(f"No holdings available for {crypto}")
-        
+        lots = self.holdings.get(crypto)
+
+        # Phase 1: plan the disposal without touching inventory
+        plan: List[Tuple[Dict, float]] = []
+        remaining_to_dispose = quantity_to_dispose
+        for lot in (lots or ()):
+            if remaining_to_dispose <= QUANTITY_EPSILON:
+                break
+            take = min(lot['quantity'], remaining_to_dispose)
+            plan.append((lot, take))
+            remaining_to_dispose -= take
+
+        if remaining_to_dispose > QUANTITY_EPSILON:
+            available = self.get_remaining_holdings(crypto)
+            raise InsufficientHoldingsError(
+                f"Insufficient holdings for {crypto}: need {quantity_to_dispose:.8f}, "
+                f"hold {available:.8f}, short by {remaining_to_dispose:.8f}"
+            )
+
+        # Phase 2: commit
         total_cost_basis = 0.0
         disposals = []
-        remaining_to_dispose = quantity_to_dispose
-        
-        while remaining_to_dispose > 0.00000001:  # Small threshold for floating point
-            if not self.holdings[crypto]:
-                raise ValueError(f"Insufficient holdings for {crypto}. Trying to sell {remaining_to_dispose} more.")
-            
-            oldest_holding = self.holdings[crypto][0]
-            available_qty = oldest_holding['quantity']
-            
-            if available_qty <= remaining_to_dispose:
-                # Use entire oldest holding
-                cost = available_qty * oldest_holding['cost_per_unit']
-                total_cost_basis += cost
-                disposals.append({
-                    'quantity': available_qty,
-                    'cost_per_unit': oldest_holding['cost_per_unit'],
-                    'cost': cost,
-                    'acquisition_date': oldest_holding['date']
-                })
-                remaining_to_dispose -= available_qty
-                self.holdings[crypto].popleft()
-            else:
-                # Use partial holding
-                cost = remaining_to_dispose * oldest_holding['cost_per_unit']
-                total_cost_basis += cost
-                disposals.append({
-                    'quantity': remaining_to_dispose,
-                    'cost_per_unit': oldest_holding['cost_per_unit'],
-                    'cost': cost,
-                    'acquisition_date': oldest_holding['date']
-                })
-                oldest_holding['quantity'] -= remaining_to_dispose
-                remaining_to_dispose = 0
-        
+        for lot, take in plan:
+            cost = take * lot['cost_per_unit']
+            total_cost_basis += cost
+            disposals.append({
+                'quantity': take,
+                'cost_per_unit': lot['cost_per_unit'],
+                'cost': cost,
+                'acquisition_date': lot['date']
+            })
+            lot['quantity'] -= take
+
+        while lots and lots[0]['quantity'] <= QUANTITY_EPSILON:
+            lots.popleft()
+
         return total_cost_basis, disposals
-    
+
     def get_remaining_holdings(self, crypto: str) -> float:
         """Get total quantity of remaining holdings for a crypto"""
         if crypto not in self.holdings:
@@ -131,157 +201,178 @@ class CryptoPnLCalculator:
         
         return instant_orders, spot_orders
     
+    @staticmethod
+    def _optional_float(row, column: Optional[str]) -> float:
+        """Read an optional numeric cell, treating blanks as 0.0"""
+        if column is None:
+            return 0.0
+        value = row[column]
+        return float(value) if pd.notna(value) else 0.0
+
     def parse_instant_orders(self, df: pd.DataFrame):
         """Parse Instant Orders (all INR-based)"""
         print("Parsing Instant Orders...")
-        
-        for _, row in df.iterrows():
+
+        cols = {
+            'date': resolve_column(df, ('Trade Completion time', 'Transaction time'), 'trade time'),
+            'crypto': resolve_column(df, ('Crypto',), 'crypto'),
+            'side': resolve_column(df, ('Side (Buy/Sell)', 'Side'), 'side'),
+            'quantity': resolve_column(df, ('Quantity',), 'quantity'),
+            'price': resolve_column(df, ('Avg Buying/Selling Price(in INR)',), 'price'),
+            'gross': resolve_column(df, ('Gross Amount Paid/Received by the user(in INR)',), 'gross amount'),
+            'fees': resolve_column(df, ('Fees(in INR)',), 'fees', required=False),
+            'tds': resolve_column(df, ('*TDS(in INR)', 'TDS(in INR)'), 'TDS', required=False),
+        }
+
+        for position, (_, row) in enumerate(df.iterrows(), start=1):
             try:
-                date = pd.to_datetime(row['Trade Completion time'])
-                crypto = str(row['Crypto']).strip()
-                side = str(row['Side (Buy/Sell)']).strip().upper()
-                quantity = float(row['Quantity'])
-                price_per_unit = float(row['Avg Buying/Selling Price(in INR)'])
-                gross_amount = float(row['Gross Amount Paid/Received by the user(in INR)'])
-                fees = float(row['Fees(in INR)']) if pd.notna(row['Fees(in INR)']) else 0.0
-                tds = float(row['*TDS(in INR)']) if pd.notna(row['*TDS(in INR)']) else 0.0
-                
+                crypto = str(row[cols['crypto']]).strip().upper()
+                side = self._normalize_side(row[cols['side']])
+
                 txn = Transaction(
-                    date=date,
+                    date=pd.to_datetime(row[cols['date']]),
                     crypto=crypto,
                     side=side,
-                    quantity=quantity,
-                    price_per_unit=price_per_unit,
-                    gross_amount=gross_amount,
-                    fees=fees,
-                    tds=tds,
+                    quantity=float(row[cols['quantity']]),
+                    price_per_unit=float(row[cols['price']]),
+                    gross_amount=float(row[cols['gross']]),
+                    fees=self._optional_float(row, cols['fees']),
+                    tds=self._optional_float(row, cols['tds']),
                     description=f"Instant Order - {crypto} {side}"
                 )
                 self.transactions.append(txn)
             except Exception as e:
-                print(f"Error parsing instant order row: {e}")
-                continue
-    
+                # A dropped row silently understates cost basis and inflates P&L,
+                # so surface it instead of continuing with an incomplete report.
+                raise ValueError(f"Instant Orders row {position}: {e}") from e
+
+    @staticmethod
+    def _normalize_side(value) -> str:
+        side = str(value).strip().upper()
+        if side not in ('BUY', 'SELL'):
+            raise ValueError(f"Unrecognised side '{value}' (expected Buy or Sell)")
+        return side
+
     def parse_spot_orders(self, df: pd.DataFrame):
-        """Parse Spot Orders (INR and USDT pairs)"""
+        """Parse Spot Orders (INR and crypto-quoted pairs)"""
         print("Parsing Spot Orders...")
-        
-        for _, row in df.iterrows():
+
+        cols = {
+            'date': resolve_column(df, ('Trade Completion time', 'Transaction time'), 'trade time'),
+            'pair': resolve_column(df, ('Crypto Pair',), 'crypto pair'),
+            'base': resolve_column(df, ('Base currency',), 'base currency', required=False),
+            'side': resolve_column(df, ('Side (Buy/Sell)', 'Side'), 'side'),
+            'quantity': resolve_column(df, ('Quantity',), 'quantity'),
+            'price': resolve_column(df, ('Avg Buying/Selling Price(in base currency)',), 'price'),
+            'gross_base': resolve_column(
+                df, ('Gross Amount Paid/Received by the user(in base currency)',), 'gross amount'),
+            'fees_base': resolve_column(df, ('Fees(in base currency)',), 'fees', required=False),
+            'net_base': resolve_column(
+                df, ('Net Amount Paid/Received by the user(in base currency)',), 'net amount', required=False),
+            'net_inr': resolve_column(
+                df, ('*Net Amount Paid/Received by the user (in INR)',), 'net amount in INR', required=False),
+            'tds_inr': resolve_column(df, ('**TDS (in INR)', 'TDS (in INR)'), 'TDS in INR', required=False),
+        }
+
+        for position, (_, row) in enumerate(df.iterrows(), start=1):
             try:
-                date = pd.to_datetime(row['Trade Completion time'])
-                crypto_pair = str(row['Crypto Pair']).strip()
-                side = str(row['Side (Buy/Sell)']).strip().upper()
-                quantity = float(row['Quantity'])
-                price_per_unit = float(row['Avg Buying/Selling Price(in base currency)'])
-                gross_amount_base = float(row['Gross Amount Paid/Received by the user(in base currency)'])
-                fees_base = float(row['Fees(in base currency)']) if pd.notna(row['Fees(in base currency)']) else 0.0
-                
-                # Get INR equivalent
-                gross_amount_inr = float(row['*Net Amount Paid/Received by the user (in INR)']) if pd.notna(row['*Net Amount Paid/Received by the user (in INR)']) else None
-                tds_inr = float(row['**TDS (in INR)']) if pd.notna(row['**TDS (in INR)']) else 0.0
-                
-                # Extract target crypto from pair
-                if crypto_pair.endswith('INR'):
-                    # INR pair - direct transaction
-                    target_crypto = crypto_pair.replace('INR', '')
-                    
-                    txn = Transaction(
-                        date=date,
-                        crypto=target_crypto,
-                        side=side,
-                        quantity=quantity,
-                        price_per_unit=price_per_unit,
-                        gross_amount=gross_amount_base,  # Already in INR
-                        fees=fees_base,
-                        tds=tds_inr,
-                        description=f"Spot Order - {crypto_pair} {side}"
-                    )
-                    self.transactions.append(txn)
-                    
-                elif crypto_pair.endswith('USDT'):
-                    # USDT pair - needs transformation
-                    target_crypto = crypto_pair.replace('USDT', '')
-                    
-                    # Calculate INR equivalent per unit
-                    if gross_amount_inr is not None and gross_amount_inr > 0:
-                        inr_equivalent = gross_amount_inr
-                    else:
-                        # Fallback: use approximate conversion if INR value not available
-                        inr_equivalent = gross_amount_base * 90  # Approximate USDT rate
-                    
-                    if side == 'BUY':
-                        # xxxUSDT BUY => SELL USDT + BUY target crypto
-                        
-                        # 1. SELL USDT (disposal event)
-                        usdt_txn = Transaction(
-                            date=date,
-                            crypto='USDT',
-                            side='SELL',
-                            quantity=gross_amount_base,  # USDT amount
-                            price_per_unit=inr_equivalent / gross_amount_base if gross_amount_base > 0 else 0,
-                            gross_amount=inr_equivalent,
-                            fees=0.0,  # Fees handled separately
-                            tds=0.0,
-                            description=f"Implicit USDT disposal from {crypto_pair} BUY"
-                        )
-                        self.transactions.append(usdt_txn)
-                        
-                        # 2. BUY target crypto
-                        target_txn = Transaction(
-                            date=date,
-                            crypto=target_crypto,
-                            side='BUY',
-                            quantity=quantity,
-                            price_per_unit=inr_equivalent / quantity if quantity > 0 else 0,
-                            gross_amount=inr_equivalent,
-                            fees=fees_base * (inr_equivalent / gross_amount_base) if gross_amount_base > 0 else 0,
-                            tds=tds_inr,
-                            description=f"Spot Order - {crypto_pair} BUY (bought with USDT)"
-                        )
-                        self.transactions.append(target_txn)
-                        
-                    else:  # SELL
-                        # xxxUSDT SELL => SELL target crypto + BUY USDT
-                        
-                        # 1. SELL target crypto (disposal event)
-                        target_txn = Transaction(
-                            date=date,
-                            crypto=target_crypto,
-                            side='SELL',
-                            quantity=quantity,
-                            price_per_unit=inr_equivalent / quantity if quantity > 0 else 0,
-                            gross_amount=inr_equivalent,
-                            fees=0.0,
-                            tds=tds_inr,
-                            description=f"Spot Order - {crypto_pair} SELL (for USDT)"
-                        )
-                        self.transactions.append(target_txn)
-                        
-                        # 2. BUY USDT
-                        usdt_txn = Transaction(
-                            date=date,
-                            crypto='USDT',
-                            side='BUY',
-                            quantity=gross_amount_base,  # USDT amount
-                            price_per_unit=inr_equivalent / gross_amount_base if gross_amount_base > 0 else 0,
-                            gross_amount=inr_equivalent,
-                            fees=fees_base * (inr_equivalent / gross_amount_base) if gross_amount_base > 0 else 0,
-                            tds=0.0,
-                            description=f"Implicit USDT acquisition from {crypto_pair} SELL"
-                        )
-                        self.transactions.append(usdt_txn)
-                
+                self._parse_spot_row(row, cols)
             except Exception as e:
-                print(f"Error parsing spot order row: {e}")
-                continue
-    
+                raise ValueError(f"Spot Orders row {position}: {e}") from e
+
+    def _parse_spot_row(self, row, cols: Dict[str, Optional[str]]):
+        date = pd.to_datetime(row[cols['date']])
+        crypto_pair = str(row[cols['pair']]).strip()
+        base_currency = row[cols['base']] if cols['base'] else None
+        side = self._normalize_side(row[cols['side']])
+        quantity = float(row[cols['quantity']])
+        price_per_unit = float(row[cols['price']])
+        gross_base = float(row[cols['gross_base']])
+        fees_base = self._optional_float(row, cols['fees_base'])
+        tds_inr = self._optional_float(row, cols['tds_inr'])
+
+        target_crypto, quote_currency = resolve_symbol(crypto_pair, base_currency)
+
+        if quote_currency == 'INR':
+            # Base currency is already INR - one transaction, nothing implicit.
+            self.transactions.append(Transaction(
+                date=date,
+                crypto=target_crypto,
+                side=side,
+                quantity=quantity,
+                price_per_unit=price_per_unit,
+                gross_amount=gross_base,
+                fees=fees_base,
+                tds=tds_inr,
+                description=f"Spot Order - {crypto_pair} {side}"
+            ))
+            return
+
+        # Crypto-quoted pair: the quote asset is itself bought/sold, so the
+        # trade is two taxable events.
+        #
+        # Net amount = gross +/- fees, and is the quantity of quote currency
+        # that actually moves in/out of the wallet. The export only gives an
+        # INR figure for the NET amount, so derive the INR rate from it and
+        # value the GROSS leg with that rate - Section 115BBH excludes fees
+        # from cost of acquisition and from consideration.
+        net_base = self._optional_float(row, cols['net_base'])
+        if net_base <= 0:
+            net_base = gross_base + fees_base if side == 'BUY' else gross_base - fees_base
+
+        net_inr = self._optional_float(row, cols['net_inr'])
+        if net_inr <= 0:
+            raise ValueError(
+                f"Missing INR valuation for {crypto_pair} trade quoted in {quote_currency}; "
+                f"cannot value it for Section 115BBH reporting"
+            )
+
+        inr_rate = net_inr / net_base
+        gross_inr = gross_base * inr_rate
+        fees_inr = fees_base * inr_rate
+
+        quote_leg = Transaction(
+            date=date,
+            crypto=quote_currency,
+            side='SELL' if side == 'BUY' else 'BUY',
+            quantity=net_base,
+            price_per_unit=inr_rate,
+            gross_amount=net_inr,
+            fees=0.0,  # trade fee is recorded once, on the target leg
+            # TDS is levied on the transfer of a VDA, so it belongs to whichever
+            # leg is the disposal.
+            tds=tds_inr if side == 'BUY' else 0.0,
+            description=(f"Implicit {quote_currency} disposal from {crypto_pair} BUY" if side == 'BUY'
+                         else f"Implicit {quote_currency} acquisition from {crypto_pair} SELL")
+        )
+
+        target_leg = Transaction(
+            date=date,
+            crypto=target_crypto,
+            side=side,
+            quantity=quantity,
+            price_per_unit=gross_inr / quantity if quantity > 0 else 0.0,
+            gross_amount=gross_inr,
+            fees=fees_inr,
+            tds=0.0 if side == 'BUY' else tds_inr,
+            description=(f"Spot Order - {crypto_pair} BUY (bought with {quote_currency})" if side == 'BUY'
+                         else f"Spot Order - {crypto_pair} SELL (for {quote_currency})")
+        )
+
+        # Disposal first so FIFO sees the acquisition it funds.
+        if side == 'BUY':
+            self.transactions.extend([quote_leg, target_leg])
+        else:
+            self.transactions.extend([target_leg, quote_leg])
+
     def process_transactions(self):
         """Process all transactions in chronological order and calculate P&L"""
         print(f"\nProcessing {len(self.transactions)} transactions...")
         
-        # Sort by date
-        self.transactions.sort(key=lambda x: x.date)
-        
+        # Sort by date; on identical timestamps settle acquisitions first so a
+        # same-second buy/sell pair does not look like an oversell.
+        self.transactions.sort(key=lambda x: (x.date, 0 if x.side == 'BUY' else 1))
+
         for txn in self.transactions:
             if txn.side == 'BUY':
                 # Add to inventory (cost basis = gross amount per Section 115BBH)
@@ -329,7 +420,7 @@ class CryptoPnLCalculator:
                         'Description': txn.description
                     })
                     
-                except ValueError as e:
+                except InsufficientHoldingsError as e:
                     print(f"Warning: {e} for transaction on {txn.date.date()}")
                     # Record transaction with error
                     self.pnl_records.append({
@@ -353,26 +444,31 @@ class CryptoPnLCalculator:
         crypto_stats = defaultdict(lambda: {
             'Total Quantity Bought': 0.0,
             'Total Quantity Sold': 0.0,
-            'Total Cost Basis (INR)': 0.0,
+            'Total Purchase Cost (INR)': 0.0,
+            'Cost Basis of Sold (INR)': 0.0,
             'Total Proceeds (INR)': 0.0,
             'Total P&L (INR)': 0.0,
             'Total Fees (INR)': 0.0,
             'Total TDS (INR)': 0.0,
             'Remaining Holdings': 0.0
         })
-        
+
         # Aggregate data from pnl_records
         for record in self.pnl_records:
             crypto = record['Crypto']
-            
+
             if record['Side'] == 'BUY':
                 crypto_stats[crypto]['Total Quantity Bought'] += record['Quantity']
-                crypto_stats[crypto]['Total Cost Basis (INR)'] += record['Cost Basis (INR)']
+                # What was paid for everything acquired, sold or still held
+                crypto_stats[crypto]['Total Purchase Cost (INR)'] += record['Cost Basis (INR)']
             elif record['Side'] == 'SELL':
                 crypto_stats[crypto]['Total Quantity Sold'] += record['Quantity']
+                # FIFO cost of only the quantity disposed - this is what nets
+                # against proceeds to give P&L
+                crypto_stats[crypto]['Cost Basis of Sold (INR)'] += record['Cost Basis (INR)']
                 crypto_stats[crypto]['Total Proceeds (INR)'] += record['Proceeds (INR)']
                 crypto_stats[crypto]['Total P&L (INR)'] += record['P&L (INR)']
-            
+
             crypto_stats[crypto]['Total Fees (INR)'] += record['Fees (INR)']
             crypto_stats[crypto]['Total TDS (INR)'] += record['TDS (INR)']
         

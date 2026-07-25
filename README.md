@@ -13,7 +13,8 @@ A Python script to calculate cryptocurrency profit and loss statements compliant
 - ✅ **Section 115BBH Compliance**: Fees are NOT included in cost basis or proceeds (as per Indian VDA tax rules)
 - ✅ **Multi-Sheet Excel Output**: Generates comprehensive reports with transaction log, crypto-wise summary, and overall summary
 - ✅ **Indian Financial Year Support**: Automatically detects and reports for April-March financial year
-- ✅ **Comprehensive Error Handling**: Validates data and reports parsing issues
+- ✅ **Header Variant Tolerance**: Accepts the different column names CoinDCX has shipped across export versions (`Trade Completion time` / `Transaction time`, `*TDS(in INR)` / `**TDS(in INR)`) and every pair style (`BTCUSDT`, `BTC-USDT`, `BTC/USDT`)
+- ✅ **Fail-Loud Parsing**: An unreadable row aborts the run instead of being silently dropped — a dropped buy would understate cost basis and overstate taxable gains
 - ✅ **Accurate USDT Tracking**: Properly tracks USDT cost basis for P&L calculations
 
 ## Requirements
@@ -50,6 +51,12 @@ This will process `crypto_transactions.xlsx` in the current directory and genera
 python crypto_pnl_calculator.py input_file.xlsx output_report.xlsx
 ```
 
+### Running the Tests
+
+```bash
+uv run pytest
+```
+
 ## Input File Format
 
 The script expects an Excel file exported from CoinDCX with two sheets:
@@ -60,16 +67,16 @@ The script expects an Excel file exported from CoinDCX with two sheets:
 
 **Required columns** (header row at Excel row 9):
 
-- Trade ID
+- Trade ID *(or `Transaction ID`)*
 - Crypto
-- Trade Completion time
+- Trade Completion time *(or `Transaction time`)*
 - Side (Buy/Sell)
 - Avg Buying/Selling Price(in INR)
 - Quantity
 - Gross Amount Paid/Received by the user(in INR)
-- Fees(in INR)
+- Fees(in INR) *(optional)*
 - Net Amount Paid/Received by the user(in INR)
-- *TDS(in INR)
+- *TDS(in INR) *(or `**TDS(in INR)`; optional)*
 
 **Note**: The sheet must include the CoinDCX standard header rows (approximately 8 rows) before the column headers.
 
@@ -80,9 +87,9 @@ The script expects an Excel file exported from CoinDCX with two sheets:
 
 - Order ID
 - Trade ID
-- Crypto Pair (e.g., BTCINR, ETHUSDT, SOLINR)
+- Crypto Pair (e.g., `BTCINR`, `ETHUSDT`, `SOLINR`, `BTC-USDT`, `BTC/USDT`)
 - Base currency
-- Trade Completion time
+- Trade Completion time *(or `Transaction time`)*
 - Side (Buy/Sell)
 - Avg Buying/Selling Price(in base currency)
 - Quantity
@@ -120,8 +127,10 @@ Detailed log of every transaction including:
 Summary for each cryptocurrency:
 
 - Total Quantity Bought/Sold
-- Total Cost Basis and Proceeds
-- Total P&L
+- **Total Purchase Cost (INR)** — what was paid for everything acquired, whether sold or still held
+- **Cost Basis of Sold (INR)** — FIFO cost of only the quantity disposed
+- Total Proceeds (INR)
+- Total P&L (INR) — always equals `Total Proceeds − Cost Basis of Sold`
 - Total Fees and TDS (reference only)
 - Remaining Holdings
 
@@ -184,7 +193,7 @@ This creates TWO transactions:
 The script may show warnings like:
 
 ```plaintext
-Warning: No holdings available for USDT for transaction on 2025-09-03
+Warning: Insufficient holdings for USDT: need REDACTED00, hold 10.00000000, short by 45.38805500 for transaction on 2025-09-04
 ```
 
 **Causes:**
@@ -199,7 +208,18 @@ Warning: No holdings available for USDT for transaction on 2025-09-03
 - Include transactions from all relevant time periods
 - If USDT was externally transferred, manually add those transactions
 
-These warnings indicate incomplete USDT P&L data. The script will still process other transactions correctly, but USDT disposal P&L will be marked as errors.
+These warnings indicate incomplete USDT P&L data. The script will still process other transactions correctly, but USDT disposal P&L will be marked as errors. A failed disposal leaves the inventory untouched, so later valid sells keep their cost basis.
+
+### Parse Errors
+
+A row that cannot be read aborts the run with the sheet and row number, for example:
+
+```plaintext
+Error: Instant Orders row 4: Unrecognised side 'Transfer' (expected Buy or Sell)
+Error: Spot Orders row 12: Could not find the 'trade time' column. Tried [...]. Sheet has: [...]
+```
+
+This is deliberate. Earlier versions skipped bad rows and printed a warning, which produced a plausible-looking but wrong tax report when an export used renamed headers.
 
 ## Troubleshooting
 
@@ -297,6 +317,27 @@ When processing USDT pairs, the script creates two transactions:
 
 1. SELL 0.01 ETH → Calculate P&L using FIFO cost basis
 2. BUY 30 USDT → Record acquisition at INR equivalent value
+
+### INR Valuation of USDT-Quoted Trades
+
+CoinDCX only supplies an INR figure for the **net** amount (`*Net Amount Paid/Received by the user (in INR)`), which already has the fee added (buys) or subtracted (sells). Section 115BBH needs **gross** figures, so the script derives the rate and revalues:
+
+```plaintext
+inr_rate  = net_amount_in_INR / net_amount_in_base
+gross_INR = gross_amount_in_base * inr_rate
+fees_INR  = fees_in_base * inr_rate
+```
+
+The quote-currency leg (USDT) is recorded at the **net** quantity, since that is what actually moves in and out of the wallet — the fee is paid in USDT too. The target crypto leg is recorded at the **gross** INR value, keeping fees out of cost basis and proceeds.
+
+### TDS Attribution
+
+TDS is levied on the *transfer* of a VDA, so it is recorded against the disposal leg:
+
+- `ETHUSDT BUY` → TDS sits on the **USDT SELL** leg
+- `ETHUSDT SELL` → TDS sits on the **ETH SELL** leg
+
+Totals are unaffected; only the per-crypto breakdown differs.
 
 ## Disclaimer
 

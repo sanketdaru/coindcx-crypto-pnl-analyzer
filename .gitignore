@@ -174,3 +174,31 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+### Personal data - NEVER COMMIT ###
+# CoinDCX exports and generated P&L reports contain real trade history,
+# account holder name, email and PAN. Keep every spreadsheet out of git.
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+# Excel/LibreOffice lock files (e.g. ~$crypto_pnl_report_FY2025-26.xlsx)
+~$*
+.~lock.*#
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+### Editors ###
+.idea/
+.vscode/
+*.swp
+*.swo
+
+### Claude Code ###
+.claude/settings.local.json
