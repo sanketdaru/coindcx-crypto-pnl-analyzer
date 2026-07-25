@@ -1,13 +1,31 @@
 [project]
-name = "coindcx-crypto-pnl-analyzer"
-version = "0.1.0"
-description = "A Python script to calculate cryptocurrency profit and loss statements compliant with Indian VDA (Virtual Digital Asset) taxation under Section 115BBH of the Income Tax Act, 1961. This script is provided as-is for informational purposes only and should not be considered as tax advice."
+name = "india-crypto-tax-calculator"
+version = "0.2.0"
+description = "Turn CoinDCX trade exports into FIFO profit and loss reports for Indian crypto tax under Section 115BBH of the Income Tax Act, 1961."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+keywords = [
+    "crypto-tax",
+    "india",
+    "section-115bbh",
+    "vda",
+    "fifo",
+    "capital-gains",
+    "income-tax",
+    "cryptocurrency",
+    "coindcx",
+]
 requires-python = ">=3.13"
 dependencies = [
     "openpyxl>=3.1.5",
     "pandas>=3.0.1",
 ]
+
+[project.urls]
+Homepage = "https://sanketdaru.github.io/india-crypto-tax-calculator/"
+Repository = "https://github.com/sanketdaru/india-crypto-tax-calculator"
+Issues = "https://github.com/sanketdaru/india-crypto-tax-calculator/issues"
 
 [dependency-groups]
 dev = [
