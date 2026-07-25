@@ -10,6 +10,13 @@ Thanks for considering a contribution.
 >
 > Reduce your problem to a few fabricated rows before sharing it.
 
+## Understand the design first
+
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains why the code is shaped the way it
+is. Several decisions look arbitrary and are not — the valuation of crypto-quoted trades
+and the plan-then-commit FIFO disposal especially. Read it before changing how any figure
+is computed.
+
 ## Setup
 
 ```bash

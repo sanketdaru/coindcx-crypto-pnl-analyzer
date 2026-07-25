@@ -51,7 +51,7 @@ telemetry. It reads a file from your disk and writes a report back to your disk.
 - [Requirements](#requirements) · [Usage](#usage) · [Input File Format](#input-file-format)
 - [Output Reports](#output-reports) · [Key Tax Rules](#key-tax-rules-section-115bbh)
 - [Troubleshooting](#troubleshooting) · [Technical Notes](#technical-notes)
-- [Disclaimer](DISCLAIMER.md) · [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md)
+- [Architecture](docs/ARCHITECTURE.md) · [Disclaimer](DISCLAIMER.md) · [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md)
 
 ## Not affiliated with CoinDCX
 
