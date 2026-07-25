@@ -50,6 +50,18 @@ th{font-weight:600;color:var(--muted)}
 details{border-bottom:1px solid var(--line);padding:.85rem 0}
 summary{cursor:pointer;font-weight:600}
 details p{margin:.6rem 0 0;color:var(--muted)}
+details.guide{border:1px solid var(--line);border-radius:8px;padding:.9rem 1.1rem;margin-bottom:.75rem;background:var(--card)}
+details.guide[open]{padding-bottom:1.4rem}
+details.guide>summary{font-size:1.02rem}
+details.guide .hint{font-weight:400;color:var(--muted);font-size:.88rem}
+details.guide h3{font-size:.98rem;margin:1.6rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+details.guide ol{padding-left:1.3rem;margin:.5rem 0}
+details.guide li{margin-bottom:.45rem}
+details.guide p{color:var(--fg)}
+details.guide pre{margin:.7rem 0}
+.tip{font-size:.9rem;color:var(--muted);border-left:3px solid var(--line);padding-left:.8rem;margin:.7rem 0}
+.warn-inline{border-left:3px solid var(--warnline);background:var(--warnbg);color:var(--warnfg);padding:.6rem .85rem;border-radius:4px;font-size:.92rem}
+details.guide p.warn-inline{color:var(--warnfg)}
 footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;color:var(--muted);font-size:.9rem}
 .sample-note{color:var(--muted);font-size:.85rem}
 </style>
@@ -97,15 +109,115 @@ footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;color
 <p>This tool does not. It is a Python script that runs on your own computer. It opens no network connections, has no account, no API key, no telemetry and no analytics. The input file is read from your disk and the report is written back to your disk. Nothing is transmitted anywhere, and you can read the source to confirm that.</p>
 
 <h2 id="install">Install and run</h2>
-<p>You need <a href="https://github.com/sanketdaru/india-crypto-tax-calculator#requirements">uv</a> and Python 3.13.</p>
+
+<p>You do <strong>not</strong> need to know how to program, and you do not need to install Python separately — <code>uv</code> fetches the right version for you. Three commands in total. Pick your operating system:</p>
+
+<details class="guide" id="guide-windows">
+<summary>Step-by-step for Windows <span class="hint">(no programming experience needed — start here)</span></summary>
+
+<h3>Step 1 &middot; Download the calculator</h3>
+<ol>
+<li>Go to <a href="https://github.com/sanketdaru/india-crypto-tax-calculator">the project page on GitHub</a>.</li>
+<li>Click the green <strong>Code</strong> button, then <strong>Download ZIP</strong>.</li>
+<li>Open your <strong>Downloads</strong> folder and find <code>india-crypto-tax-calculator-master.zip</code>.</li>
+<li>Right-click it &rarr; <strong>Extract All…</strong> &rarr; <strong>Extract</strong>.</li>
+<li>You now have a folder called <code>india-crypto-tax-calculator-master</code>. Move it somewhere easy to find, such as your Desktop.</li>
+</ol>
+<p class="tip">Prefer <code>git clone</code>? See the <a href="#guide-git">Git instructions</a> below. The ZIP is simpler and works identically.</p>
+
+<h3>Step 2 &middot; Install uv</h3>
+<p><code>uv</code> is the tool that runs the calculator. It is free, open source and made by Astral.</p>
+<ol>
+<li>Press the <strong>Windows key</strong>, type <code>PowerShell</code>, and click <strong>Windows PowerShell</strong>.</li>
+<li>Copy the line below, paste it into the blue window (right-click pastes), and press <strong>Enter</strong>:</li>
+</ol>
+<pre><code>winget install --id=astral-sh.uv -e</code></pre>
+<ol start="3">
+<li>Wait for it to finish. If it asks you to agree to terms, type <code>Y</code> and press Enter.</li>
+<li><strong>Close PowerShell completely and open it again.</strong> This step is required — the new command is not available until you do.</li>
+</ol>
+<p class="tip">If <code>winget</code> is not recognised (older Windows), use this instead:<br>
+<code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></p>
+
+<h3>Step 3 &middot; Open PowerShell inside the folder</h3>
+<ol>
+<li>Open the <code>india-crypto-tax-calculator-master</code> folder.</li>
+<li>Hold <strong>Shift</strong> and right-click on an empty area inside the folder.</li>
+<li>Choose <strong>Open PowerShell window here</strong> (on Windows 11: <strong>Open in Terminal</strong>).</li>
+</ol>
+<p class="tip">No such option? Open PowerShell normally, type <code>cd </code> (with a space), then drag the folder onto the window and press Enter.</p>
+
+<h3>Step 4 &middot; Set it up, once</h3>
+<pre><code>uv sync</code></pre>
+<p>This downloads Python and the libraries the calculator needs. It takes a minute the first time and is instant afterwards.</p>
+
+<h3>Step 5 &middot; Add your CoinDCX trade report</h3>
+<ol>
+<li>Log in to CoinDCX and download your <strong>Trade Report</strong> for the financial year as an Excel file.</li>
+<li>Rename it to exactly <code>crypto_transactions.xlsx</code>.</li>
+<li>Put it in the <code>india-crypto-tax-calculator-master</code> folder, beside <code>crypto_pnl_calculator.py</code>.</li>
+</ol>
+<p class="tip">Windows may hide the <code>.xlsx</code> ending. If you see a file called <code>crypto_transactions.xlsx.xlsx</code> the name is wrong — turn on <strong>File name extensions</strong> under the <strong>View</strong> tab in File Explorer to see what is really there.</p>
+
+<h3>Step 6 &middot; Run it</h3>
+<pre><code>uv run python crypto_pnl_calculator.py</code></pre>
+<p>The disclaimer prints first, then a summary of your gains and losses.</p>
+
+<h3>Step 7 &middot; Collect your report</h3>
+<p>A new file appears in the same folder, named for your financial year — for example <code>crypto_pnl_report_FY2025-26.xlsx</code>. Open it in Excel. It has three sheets: every transaction, a per-asset summary, and headline totals.</p>
+<p class="warn-inline">Take that file to a qualified tax professional before you file anything.</p>
+</details>
+
+<details class="guide">
+<summary>Step-by-step for macOS or Linux</summary>
+<p>Open <strong>Terminal</strong> and run:</p>
+<pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre>
+<p>Close and reopen Terminal, then:</p>
+<pre><code>git clone https://github.com/sanketdaru/india-crypto-tax-calculator.git
+cd india-crypto-tax-calculator
+uv sync</code></pre>
+<p>Save your CoinDCX trade report into that folder as <code>crypto_transactions.xlsx</code>, then:</p>
+<pre><code>uv run python crypto_pnl_calculator.py</code></pre>
+<p>Your report is written beside it as <code>crypto_pnl_report_FY2025-26.xlsx</code>.</p>
+</details>
+
+<details class="guide" id="guide-git">
+<summary>Using Git instead of the ZIP</summary>
+<p>If you already have <a href="https://git-scm.com/downloads">Git</a> installed, or want to pull updates later with <code>git pull</code>:</p>
 <pre><code>git clone https://github.com/sanketdaru/india-crypto-tax-calculator.git
 cd india-crypto-tax-calculator
 uv sync
-source .venv/bin/activate</code></pre>
-<p>Download your trade report from CoinDCX, save it as <code>crypto_transactions.xlsx</code> in the project folder, then run:</p>
-<pre><code>python crypto_pnl_calculator.py</code></pre>
-<p>Or name the files explicitly:</p>
-<pre><code>python crypto_pnl_calculator.py my_trades.xlsx my_report.xlsx</code></pre>
+uv run python crypto_pnl_calculator.py</code></pre>
+<p>On Windows, install Git with <code>winget install --id=Git.Git -e</code> first.</p>
+</details>
+
+<details class="guide">
+<summary>Naming the files yourself</summary>
+<p>To use different file names, pass them as arguments — input first, output second:</p>
+<pre><code>uv run python crypto_pnl_calculator.py my_trades.xlsx my_report.xlsx</code></pre>
+</details>
+
+<details class="guide">
+<summary>Something went wrong</summary>
+
+<h3>&ldquo;uv is not recognized as the name of a cmdlet&rdquo;</h3>
+<p>PowerShell was open before <code>uv</code> was installed. Close every PowerShell window, open a fresh one, and try again. If it still fails, reinstall with the <code>irm</code> command in Step 2.</p>
+
+<h3>&ldquo;running scripts is disabled on this system&rdquo;</h3>
+<p>Windows is blocking the installer script. Use the <code>winget</code> command in Step 2 instead — it does not run a script.</p>
+
+<h3>&ldquo;No such file or directory: crypto_transactions.xlsx&rdquo;</h3>
+<p>The calculator cannot see your trade report. Check that it sits in the same folder as <code>crypto_pnl_calculator.py</code>, and that the name matches exactly. Turn on file name extensions in File Explorer to check for a hidden double <code>.xlsx.xlsx</code>.</p>
+
+<h3>&ldquo;Could not find the &lsquo;trade time&rsquo; column&rdquo;</h3>
+<p>The export is not in the expected shape. Make sure you downloaded the <strong>Trade Report</strong> from CoinDCX and did not edit, re-save or reorder it. The error names every column it did find, which usually shows what happened.</p>
+
+<h3>&ldquo;Insufficient holdings for …&rdquo;</h3>
+<p>You sold an asset the export contains no purchase for — usually because it was bought before the report's date range, or transferred in from elsewhere. Export a period covering your full history for that asset. This is a real limitation, not a bug; see the <a href="https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/DISCLAIMER.md">disclaimer</a>.</p>
+
+<h3>Still stuck</h3>
+<p>Open an <a href="https://github.com/sanketdaru/india-crypto-tax-calculator/issues">issue</a>. <strong>Never attach your real export or report</strong> — they contain your name and full trading history. Describe the problem with made-up numbers instead.</p>
+</details>
 
 <h2>What the output looks like</h2>
 <p>The per-asset summary sheet, with the transaction log and headline totals alongside it:</p>

@@ -79,12 +79,39 @@ def test_faq_schema_answers_are_not_empty(html):
         assert len(entry['acceptedAnswer']['text'].strip()) > 40
 
 
-def test_page_is_self_contained(html):
-    """No CDN, no external fonts, no remote images, no analytics."""
-    remote = re.findall(r'(?:src|href)=["\'](https?://[^"\']+)["\']', html)
-    allowed_prefixes = (CANONICAL, 'https://github.com/sanketdaru/', 'https://schema.org')
-    for url in remote:
-        assert url.startswith(allowed_prefixes), f'external asset or link not allowed: {url}'
+ASSET_TAGS = 'script|img|iframe|source|video|audio|embed|object'
+
+
+def test_page_loads_no_external_assets(html):
+    """
+    The page must render fully offline: no CDN, no external fonts, no remote
+    images, no analytics.
+
+    Only things the browser actually fetches count. Plain <a> hyperlinks to
+    documentation are fine and are checked by test_no_trackers_or_cdns instead.
+    """
+    assets = re.findall(
+        rf'<(?:{ASSET_TAGS})\b[^>]*?\bsrc\s*=\s*["\'](https?://[^"\']+)', html, re.I
+    )
+    for tag in re.findall(r'<link\b[^>]*>', html, re.I):
+        href = re.search(r'\bhref\s*=\s*["\'](https?://[^"\']+)', tag, re.I)
+        rel = re.search(r'\brel\s*=\s*["\']([^"\']+)', tag, re.I)
+        # rel=canonical/alternate are metadata, not fetched resources
+        if href and (not rel or rel.group(1).lower() not in ('canonical', 'alternate')):
+            assets.append(href.group(1))
+
+    assert not assets, f'page must be self-contained; external assets: {assets}'
+
+
+def test_no_trackers_or_cdns(html):
+    """Belt and braces: no analytics or CDN host may appear anywhere on the page."""
+    banned = (
+        'googletagmanager', 'google-analytics', 'gtag(', 'fonts.googleapis',
+        'fonts.gstatic', 'cdn.jsdelivr', 'cdnjs.cloudflare', 'unpkg.com',
+        'connect.facebook', 'hotjar', 'segment.io', 'plausible.io', 'matomo',
+    )
+    found = [b for b in banned if b in html.lower()]
+    assert not found, f'tracker or CDN reference on a page that claims to be private: {found}'
 
 
 def test_disclaimer_appears_above_the_fold(html):

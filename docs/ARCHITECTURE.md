@@ -150,7 +150,10 @@ These exist because each has already been violated once.
 4. **No personal email address in any tracked file.** Security and conduct reports route
    through GitHub forms for this reason.
 5. **The site is self-contained.** No CDN, no external fonts, no analytics, no remote
-   images. `tests/test_site.py` enforces this and will fail on an external asset.
+   images — the page must render fully offline. Plain `<a>` hyperlinks to documentation
+   are fine; only things the browser *fetches* are banned.
+   `test_page_loads_no_external_assets` checks `src=` and non-canonical `<link>` tags,
+   and `test_no_trackers_or_cdns` blocks known analytics and CDN hosts by name.
 6. **"CoinDCX" is factual, never branding.** It names the export format read. The
    non-affiliation notice must stay wherever it appears prominently.
 7. **Don't claim the output is correct.** The site and README describe what the tool
