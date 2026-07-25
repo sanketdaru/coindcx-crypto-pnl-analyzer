@@ -235,7 +235,7 @@ This creates TWO transactions:
 The script may show warnings like:
 
 ```plaintext
-Warning: Insufficient holdings for USDT: need REDACTED00, hold 10.00000000, short by 45.38805500 for transaction on 2025-09-04
+Warning: Insufficient holdings for USDT: need 120.00000000, hold 50.00000000, short by 70.00000000 for transaction on 2025-09-04
 ```
 
 **Causes:**

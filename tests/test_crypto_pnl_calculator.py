@@ -232,14 +232,14 @@ def test_usdt_sell_splits_into_crypto_disposal_and_usdt_acquisition():
         **{
             'Crypto Pair': 'ZBCNUSDT',
             'Side (Buy/Sell)': 'sell',
-            'Avg Buying/Selling Price(in base currency)': 0.004165,
-            'Quantity': 2500.0,
-            'Gross Amount Paid/Received by the user(in base currency)': REDACTED,
-            'Fees(in base currency)': 0.020825,
-            'Net Amount Paid/Received by the user(in base currency)': REDACTED,
-            '*Net Amount Paid/Received by the user (in INR)': REDACTED,
-            '**TDS(in base currency)': REDACTED,
-            '**TDS (in INR)': REDACTED,
+            'Avg Buying/Selling Price(in base currency)': 0.005,
+            'Quantity': 2000.0,
+            'Gross Amount Paid/Received by the user(in base currency)': 10.0,
+            'Fees(in base currency)': 0.02,
+            'Net Amount Paid/Received by the user(in base currency)': 9.98,
+            '*Net Amount Paid/Received by the user (in INR)': 850.0,
+            '**TDS(in base currency)': 0.10,
+            '**TDS (in INR)': 8.5,
         }
     )]))
 
@@ -247,15 +247,15 @@ def test_usdt_sell_splits_into_crypto_disposal_and_usdt_acquisition():
     zbcn_leg = next(t for t in calc.transactions if t.crypto == 'ZBCN')
     usdt_leg = next(t for t in calc.transactions if t.crypto == 'USDT')
 
-    rate = REDACTED / REDACTED
+    rate = 850.0 / 9.98
 
     assert zbcn_leg.side == 'SELL'
-    assert zbcn_leg.gross_amount == pytest.approx(REDACTED * rate)
-    assert zbcn_leg.tds == pytest.approx(REDACTED)
+    assert zbcn_leg.gross_amount == pytest.approx(10.0 * rate)
+    assert zbcn_leg.tds == pytest.approx(8.5)
 
     assert usdt_leg.side == 'BUY'
-    assert usdt_leg.quantity == pytest.approx(REDACTED)
-    assert usdt_leg.gross_amount == pytest.approx(REDACTED)
+    assert usdt_leg.quantity == pytest.approx(9.98)
+    assert usdt_leg.gross_amount == pytest.approx(850.0)
     assert usdt_leg.tds == pytest.approx(0.0)
 
 
