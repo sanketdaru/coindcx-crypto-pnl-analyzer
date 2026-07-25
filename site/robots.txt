@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sanketdaru.github.io/india-crypto-tax-calculator/sitemap.xml

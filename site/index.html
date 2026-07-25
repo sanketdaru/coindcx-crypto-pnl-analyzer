@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>India Crypto Tax Calculator — FIFO P&amp;L for Section 115BBH</title>
+<meta name="description" content="Free open-source tool that turns CoinDCX exports into FIFO P&amp;L reports for Indian crypto tax (Section 115BBH). Runs locally — your data stays private.">
+<link rel="canonical" href="https://sanketdaru.github.io/india-crypto-tax-calculator/">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="India Crypto Tax Calculator — FIFO P&amp;L for Section 115BBH">
+<meta property="og:description" content="Turn CoinDCX exports into FIFO profit and loss reports for Indian crypto tax. Open source, runs entirely on your own machine.">
+<meta property="og:url" content="https://sanketdaru.github.io/india-crypto-tax-calculator/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="India Crypto Tax Calculator">
+<meta name="twitter:description" content="FIFO P&amp;L reports for Indian crypto tax under Section 115BBH. Open source, runs locally.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--muted:#5c6370;--line:#e3e6ea;--card:#f6f8fa;--accent:#0b5ed7;--warnbg:#fff4e5;--warnfg:#7a4100;--warnline:#f0b37e}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#30363d;--card:#161b22;--accent:#6cb0ff;--warnbg:#2b1d0e;--warnfg:#f0c68a;--warnline:#7a5320}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:52rem;margin:0 auto;padding:0 1.25rem 5rem}
+h1{font-size:2.25rem;line-height:1.2;margin:0 0 .5rem}
+h2{font-size:1.5rem;margin:3rem 0 .75rem;padding-top:.5rem}
+h3{font-size:1.05rem;margin:1.75rem 0 .35rem}
+p{margin:0 0 1rem}
+a{color:var(--accent)}
+header{border-bottom:1px solid var(--line);padding:4rem 0 3rem;margin-bottom:0}
+.tagline{font-size:1.15rem;color:var(--muted);margin-bottom:1.75rem}
+.cta{display:inline-block;padding:.6rem 1.15rem;border-radius:6px;text-decoration:none;font-weight:600;margin:0 .5rem .5rem 0}
+.cta-primary{background:var(--accent);color:#fff}
+.cta-secondary{border:1px solid var(--line);color:var(--fg)}
+.warn{background:var(--warnbg);color:var(--warnfg);border:1px solid var(--warnline);border-radius:8px;padding:1.1rem 1.25rem;margin:2rem 0}
+.warn strong{display:block;margin-bottom:.35rem;letter-spacing:.04em}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1rem;overflow-x:auto}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+p code,li code{background:var(--card);padding:.12em .35em;border-radius:4px}
+ul{padding-left:1.25rem}
+li{margin-bottom:.4rem}
+.grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.1rem}
+.card h3{margin-top:0}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.86rem;min-width:34rem}
+th,td{text-align:right;padding:.45rem .7rem;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted)}
+details{border-bottom:1px solid var(--line);padding:.85rem 0}
+summary{cursor:pointer;font-weight:600}
+details p{margin:.6rem 0 0;color:var(--muted)}
+footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;color:var(--muted);font-size:.9rem}
+.sample-note{color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>India Crypto Tax Calculator</h1>
+  <p class="tagline">Turn a CoinDCX trade export into a FIFO profit-and-loss report for Indian Virtual Digital Asset taxation under Section 115BBH.</p>
+  <a class="cta cta-primary" href="#install">Get started</a>
+  <a class="cta cta-secondary" href="https://github.com/sanketdaru/india-crypto-tax-calculator">View on GitHub</a>
+</header>
+
+<div class="warn">
+  <strong>NOT TAX ADVICE</strong>
+  This is free software provided with no warranty, written by someone who is not a tax professional. Its output is a starting point for a conversation with a qualified professional, not a finished computation. You alone are responsible for what you file. <a href="https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/DISCLAIMER.md">Read the full disclaimer and the list of what it does not handle</a>.
+</div>
+
+<h2>What it does</h2>
+<p>Indian tax on Virtual Digital Assets is charged at a flat 30% on gains under Section 115BBH of the Income Tax Act, 1961, with no deduction other than cost of acquisition and no set-off of losses. Working that out by hand across a year of trades is tedious and easy to get wrong.</p>
+<p>This tool reads the Excel trade report you download from CoinDCX and produces a multi-sheet report: a full transaction log, a per-asset summary, and headline totals.</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>FIFO cost basis</h3>
+    <p>Oldest holdings are disposed first, lot by lot, with the cost basis of each disposal tracked back to the purchase that funded it.</p>
+  </div>
+  <div class="card">
+    <h3>USDT pairs handled properly</h3>
+    <p>Buying ETH with USDT is a disposal of USDT and a separate acquisition of ETH. Both legs are recorded, and the USDT gain is not silently lost.</p>
+  </div>
+  <div class="card">
+    <h3>Gross figures, per the section</h3>
+    <p>Fees are tracked for reference but excluded from cost basis and proceeds, as Section 115BBH requires. TDS is reported separately.</p>
+  </div>
+  <div class="card">
+    <h3>Fails loudly</h3>
+    <p>A row it cannot read stops the run and names the sheet and row. It will not quietly drop a purchase and overstate your gain.</p>
+  </div>
+</div>
+
+<h2>Your data never leaves your machine</h2>
+<p>Every commercial crypto tax service asks you to upload a file containing your name, your PAN and your complete trading history to a server you do not control.</p>
+<p>This tool does not. It is a Python script that runs on your own computer. It opens no network connections, has no account, no API key, no telemetry and no analytics. The input file is read from your disk and the report is written back to your disk. Nothing is transmitted anywhere, and you can read the source to confirm that.</p>
+
+<h2 id="install">Install and run</h2>
+<p>You need <a href="https://github.com/sanketdaru/india-crypto-tax-calculator#requirements">uv</a> and Python 3.13.</p>
+<pre><code>git clone https://github.com/sanketdaru/india-crypto-tax-calculator.git
+cd india-crypto-tax-calculator
+uv sync
+source .venv/bin/activate</code></pre>
+<p>Download your trade report from CoinDCX, save it as <code>crypto_transactions.xlsx</code> in the project folder, then run:</p>
+<pre><code>python crypto_pnl_calculator.py</code></pre>
+<p>Or name the files explicitly:</p>
+<pre><code>python crypto_pnl_calculator.py my_trades.xlsx my_report.xlsx</code></pre>
+
+<h2>What the output looks like</h2>
+<p>The per-asset summary sheet, with the transaction log and headline totals alongside it:</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Crypto</th><th>Qty bought</th><th>Qty sold</th><th>Purchase cost</th><th>Cost of sold</th><th>Proceeds</th><th>P&amp;L</th><th>Holdings</th></tr></thead>
+<tbody>
+<tr><td>USDT</td><td>REDACTED</td><td>REDACTED</td><td>REDACTED</td><td>REDACTED</td><td>REDACTED</td><td>REDACTED</td><td>REDACTED</td></tr>
+<tr><td>BTC</td><td>0.0046</td><td>0.0000</td><td>REDACTED</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.0046</td></tr>
+<tr><td>ETH</td><td>REDACTED</td><td>0.0000</td><td>REDACTED</td><td>0.00</td><td>0.00</td><td>0.00</td><td>REDACTED</td></tr>
+<tr><td>SOL</td><td>REDACTED</td><td>0.0000</td><td>REDACTED</td><td>0.00</td><td>0.00</td><td>0.00</td><td>REDACTED</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sample-note">Sample data, shown for illustration only.</p>
+
+<h2>Frequently asked questions</h2>
+
+<details>
+<summary>Is this tax advice?</summary>
+<p>No. It is free software with no warranty, written by someone who is not a chartered accountant or a tax practitioner. Using it creates no advisor-client relationship. Verify every figure with a qualified professional before you file, because you alone carry the consequences of what you file.</p>
+</details>
+
+<details>
+<summary>What is Section 115BBH?</summary>
+<p>Section 115BBH of the Income Tax Act, 1961 taxes income from the transfer of Virtual Digital Assets at a flat 30%, plus applicable surcharge and cess. No deduction is allowed other than the cost of acquisition, and losses from VDAs cannot be set off against any other income or carried forward. A separate 1% TDS applies under Section 194S.</p>
+</details>
+
+<details>
+<summary>What is FIFO and why does it matter?</summary>
+<p>First In, First Out means that when you sell part of a holding, the oldest units you bought are treated as the ones sold. Since those usually have a different purchase price from your most recent buys, the method you choose changes your cost basis and therefore your taxable gain. This tool uses FIFO throughout and offers no alternative method.</p>
+</details>
+
+<details>
+<summary>How are USDT trading pairs handled?</summary>
+<p>They are correctly treated as two taxable events. Buying ETH with USDT is a disposal of USDT, which realises a gain or loss on that USDT, and separately an acquisition of ETH at the INR value of the trade. Tools that ignore the first leg understate your taxable income.</p>
+</details>
+
+<details>
+<summary>Is my data uploaded anywhere?</summary>
+<p>No. The tool runs entirely on your own machine. It opens no network connections, requires no account or API key, and sends no telemetry. Your export is read from disk and the report is written back to disk. The source is open, so you can verify this yourself.</p>
+</details>
+
+<details>
+<summary>Which exchanges are supported?</summary>
+<p>Only CoinDCX trade report exports, specifically their Instant Orders and Spot Orders sheets. This project is not affiliated with or endorsed by CoinDCX. Support for other exchanges would require a parser for each one's export format.</p>
+</details>
+
+<details>
+<summary>What does it not handle?</summary>
+<p>Airdrops, staking rewards, mining income, hard forks, gifts, P2P trades, futures, margin and lending are all out of scope, as are deposits, withdrawals and transfers between exchanges or wallets. Cost basis is derived only from purchases present in your file, so an incomplete export will overstate your gain. The full list is in the disclaimer.</p>
+</details>
+
+<details>
+<summary>Is it free?</summary>
+<p>Yes. It is open source under the Apache License 2.0, free to use, modify and redistribute, including commercially. There is no paid tier and no support contract.</p>
+</details>
+
+<footer>
+<p>Open source under the <a href="https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/LICENSE">Apache License 2.0</a> · <a href="https://github.com/sanketdaru/india-crypto-tax-calculator">Source</a> · <a href="https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/DISCLAIMER.md">Disclaimer</a> · <a href="https://github.com/sanketdaru/india-crypto-tax-calculator/issues">Issues</a></p>
+<p>Not affiliated with, endorsed by or sponsored by CoinDCX or Neblio Technologies Private Limited. All trademarks belong to their respective owners.</p>
+</footer>
+
+</main>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "India Crypto Tax Calculator",
+  "description": "Open source tool that turns CoinDCX trade exports into FIFO profit and loss reports for Indian Virtual Digital Asset taxation under Section 115BBH.",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "url": "https://sanketdaru.github.io/india-crypto-tax-calculator/",
+  "codeRepository": "https://github.com/sanketdaru/india-crypto-tax-calculator",
+  "programmingLanguage": "Python",
+  "license": "https://spdx.org/licenses/Apache-2.0",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "INR"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is this tax advice?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is free software with no warranty, written by someone who is not a chartered accountant or a tax practitioner. Using it creates no advisor-client relationship. Verify every figure with a qualified professional before you file, because you alone carry the consequences of what you file."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Section 115BBH?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Section 115BBH of the Income Tax Act, 1961 taxes income from the transfer of Virtual Digital Assets at a flat 30 percent, plus applicable surcharge and cess. No deduction is allowed other than the cost of acquisition, and losses from VDAs cannot be set off against any other income or carried forward. A separate 1 percent TDS applies under Section 194S."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is FIFO and why does it matter for crypto tax?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "First In, First Out means that when you sell part of a holding, the oldest units you bought are treated as the ones sold. Since those usually have a different purchase price from your most recent buys, the method you choose changes your cost basis and therefore your taxable gain. This tool uses FIFO throughout and offers no alternative method."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How are USDT trading pairs handled?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "They are correctly treated as two taxable events. Buying ETH with USDT is a disposal of USDT, which realises a gain or loss on that USDT, and separately an acquisition of ETH at the INR value of the trade. Tools that ignore the first leg understate your taxable income."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my crypto transaction data uploaded anywhere?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The tool runs entirely on your own machine. It opens no network connections, requires no account or API key, and sends no telemetry. Your export is read from disk and the report is written back to disk. The source is open, so you can verify this yourself."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which exchanges are supported?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only CoinDCX trade report exports, specifically their Instant Orders and Spot Orders sheets. This project is not affiliated with or endorsed by CoinDCX. Support for other exchanges would require a parser for each one's export format."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What transactions does this calculator not handle?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Airdrops, staking rewards, mining income, hard forks, gifts, P2P trades, futures, margin and lending are all out of scope, as are deposits, withdrawals and transfers between exchanges or wallets. Cost basis is derived only from purchases present in your file, so an incomplete export will overstate your gain."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this crypto tax calculator free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. It is open source under the Apache License 2.0, free to use, modify and redistribute, including commercially. There is no paid tier and no support contract."
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>
