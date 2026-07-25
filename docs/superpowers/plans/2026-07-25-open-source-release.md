@@ -348,7 +348,7 @@ software by your use of it.
 
 This software is licensed under the Apache License 2.0 and is provided on an
 "AS IS" BASIS, **WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND**, either express
-or implied. See sections 15 and 16 of [LICENSE](LICENSE) for the controlling
+or implied. See sections 7 and 8 of [LICENSE](LICENSE) for the controlling
 legal text. In plain language: it may contain errors, it may produce wrong
 numbers, and the author is not liable for any damages arising from its use.
 

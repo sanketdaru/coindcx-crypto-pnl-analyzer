@@ -32,7 +32,7 @@ Three goals, in priority order:
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| License | Apache 2.0 | §15 Disclaimer of Warranty and §16 Limitation of Liability are full legal prose, unlike MIT's single paragraph. Express patent grant. Same permissive freedoms. |
+| License | Apache 2.0 | §7 Disclaimer of Warranty and §8 Limitation of Liability are full legal prose, unlike MIT's single paragraph. Express patent grant. Same permissive freedoms. |
 | Repo name | `india-crypto-tax-calculator` | Removes the CoinDCX trademark from branding. Matches the highest-volume search phrase. |
 | Trademark in prose | Retained, factual only | The tool parses CoinDCX exports; saying so is nominative fair use and is required for users to know what it does. Paired with an explicit non-affiliation notice. |
 | Web presence | Single landing page on GitHub Pages | A README alone rarely ranks. One page is enough surface area for a single-script tool. |
@@ -58,7 +58,7 @@ Three goals, in priority order:
   verified with a qualified tax professional before it is used in a return.
 - **You are responsible.** The user alone is responsible for the accuracy and completeness
   of anything they file, and for any tax, interest, penalty or prosecution arising from it.
-- **No warranty.** Restates Apache §15/§16 in plain language and links to `LICENSE`.
+- **No warranty.** Restates Apache §7/§8 in plain language and links to `LICENSE`.
 - **Law and formats change.** Section 115BBH, its rates, TDS rules and CoinDCX's export
   format may change at any time. The software may silently become wrong.
 - **Known limitations**, stated honestly:
