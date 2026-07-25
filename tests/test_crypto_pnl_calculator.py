@@ -27,11 +27,11 @@ INSTANT_LEGACY = {
     'Crypto': 'USDT',
     'Trade Completion time': '2025-09-03 07:45:41',
     'Side (Buy/Sell)': 'Buy',
-    'Avg Buying/Selling Price(in INR)': REDACTED,
-    'Quantity': REDACTED,
-    'Gross Amount Paid/Received by the user(in INR)': 10000.0,
-    'Fees(in INR)': 59.0,
-    'Net Amount Paid/Received by the user(in INR)': 10059.0,
+    'Avg Buying/Selling Price(in INR)': 90.0,
+    'Quantity': 100.0,
+    'Gross Amount Paid/Received by the user(in INR)': 9000.0,
+    'Fees(in INR)': 45.0,
+    'Net Amount Paid/Received by the user(in INR)': 9045.0,
     '*TDS(in INR)': None,
 }
 
@@ -40,11 +40,11 @@ INSTANT_CURRENT = {
     'Crypto': 'USDT',
     'Transaction time': '2025-09-03 07:45:41',
     'Side (Buy/Sell)': 'Buy',
-    'Avg Buying/Selling Price(in INR)': REDACTED,
-    'Quantity': REDACTED,
-    'Gross Amount Paid/Received by the user(in INR)': 10000.0,
-    'Fees(in INR)': 59.0,
-    'Net Amount Paid/Received by the user(in INR)': 10059.0,
+    'Avg Buying/Selling Price(in INR)': 90.0,
+    'Quantity': 100.0,
+    'Gross Amount Paid/Received by the user(in INR)': 9000.0,
+    'Fees(in INR)': 45.0,
+    'Net Amount Paid/Received by the user(in INR)': 9045.0,
     '**TDS(in INR)': None,
 }
 
@@ -62,9 +62,9 @@ def test_instant_orders_parse_both_header_variants(row):
     txn = calc.transactions[0]
     assert txn.crypto == 'USDT'
     assert txn.side == 'BUY'
-    assert txn.quantity == pytest.approx(REDACTED)
-    assert txn.gross_amount == pytest.approx(10000.0)
-    assert txn.fees == pytest.approx(59.0)
+    assert txn.quantity == pytest.approx(100.0)
+    assert txn.gross_amount == pytest.approx(9000.0)
+    assert txn.fees == pytest.approx(45.0)
 
 
 def test_missing_required_column_raises_instead_of_silently_dropping_rows():
@@ -154,14 +154,14 @@ def _spot_row(**overrides):
         'Base currency': 'USDT',
         'Trade Completion time': '2025-09-06 14:59:05',
         'Side (Buy/Sell)': 'buy',
-        'Avg Buying/Selling Price(in base currency)': 4295.0,
-        'Quantity': 0.01,
-        'Gross Amount Paid/Received by the user(in base currency)': 42.95,
-        'Fees(in base currency)': 0.0859,
-        'Net Amount Paid/Received by the user(in base currency)': REDACTED,
-        '*Net Amount Paid/Received by the user (in INR)': REDACTED,
-        '**TDS(in base currency)': 0.4295,
-        '**TDS (in INR)': REDACTED,
+        'Avg Buying/Selling Price(in base currency)': 4000.0,
+        'Quantity': 0.02,
+        'Gross Amount Paid/Received by the user(in base currency)': 80.0,
+        'Fees(in base currency)': 0.2,
+        'Net Amount Paid/Received by the user(in base currency)': 80.2,
+        '*Net Amount Paid/Received by the user (in INR)': 7218.0,
+        '**TDS(in base currency)': 0.802,
+        '**TDS (in INR)': 72.18,
     }
     row.update(overrides)
     return row
@@ -173,12 +173,12 @@ def test_inr_pair_is_a_single_transaction():
         **{
             'Crypto Pair': 'SOLINR',
             'Base currency': 'INR',
-            'Avg Buying/Selling Price(in base currency)': 18650.0,
-            'Quantity': 0.0414,
-            'Gross Amount Paid/Received by the user(in base currency)': 772.11,
-            'Fees(in base currency)': REDACTED,
-            'Net Amount Paid/Received by the user(in base currency)': REDACTED,
-            '*Net Amount Paid/Received by the user (in INR)': REDACTED,
+            'Avg Buying/Selling Price(in base currency)': 20000.0,
+            'Quantity': 0.05,
+            'Gross Amount Paid/Received by the user(in base currency)': 1000.0,
+            'Fees(in base currency)': 10.0,
+            'Net Amount Paid/Received by the user(in base currency)': 1010.0,
+            '*Net Amount Paid/Received by the user (in INR)': 1010.0,
             '**TDS(in base currency)': None,
             '**TDS (in INR)': None,
         }
@@ -187,8 +187,8 @@ def test_inr_pair_is_a_single_transaction():
     assert len(calc.transactions) == 1
     txn = calc.transactions[0]
     assert (txn.crypto, txn.side) == ('SOL', 'BUY')
-    assert txn.gross_amount == pytest.approx(772.11)
-    assert txn.fees == pytest.approx(REDACTED)
+    assert txn.gross_amount == pytest.approx(1000.0)
+    assert txn.fees == pytest.approx(10.0)
 
 
 def test_usdt_buy_splits_into_usdt_disposal_and_crypto_acquisition():
@@ -199,19 +199,19 @@ def test_usdt_buy_splits_into_usdt_disposal_and_crypto_acquisition():
     usdt_leg = next(t for t in calc.transactions if t.crypto == 'USDT')
     eth_leg = next(t for t in calc.transactions if t.crypto == 'ETH')
 
-    rate = REDACTED / REDACTED
+    rate = 7218.0 / 80.2
 
     # USDT actually leaving the wallet is the NET amount (gross + fee).
     assert usdt_leg.side == 'SELL'
-    assert usdt_leg.quantity == pytest.approx(REDACTED)
-    assert usdt_leg.gross_amount == pytest.approx(REDACTED)
+    assert usdt_leg.quantity == pytest.approx(80.2)
+    assert usdt_leg.gross_amount == pytest.approx(7218.0)
 
     # Cost basis of the acquired crypto is the GROSS INR value, fees excluded
     # (Section 115BBH: fees are not part of cost of acquisition).
     assert eth_leg.side == 'BUY'
-    assert eth_leg.quantity == pytest.approx(0.01)
-    assert eth_leg.gross_amount == pytest.approx(42.95 * rate)
-    assert eth_leg.fees == pytest.approx(0.0859 * rate)
+    assert eth_leg.quantity == pytest.approx(0.02)
+    assert eth_leg.gross_amount == pytest.approx(80.0 * rate)
+    assert eth_leg.fees == pytest.approx(0.2 * rate)
 
 
 def test_tds_is_attributed_to_the_disposal_leg():
@@ -222,7 +222,7 @@ def test_tds_is_attributed_to_the_disposal_leg():
     eth_leg = next(t for t in calc.transactions if t.crypto == 'ETH')
 
     # Buying ETH with USDT is a *disposal of USDT* - TDS belongs there.
-    assert usdt_leg.tds == pytest.approx(REDACTED)
+    assert usdt_leg.tds == pytest.approx(72.18)
     assert eth_leg.tds == pytest.approx(0.0)
 
 
@@ -232,14 +232,14 @@ def test_usdt_sell_splits_into_crypto_disposal_and_usdt_acquisition():
         **{
             'Crypto Pair': 'ZBCNUSDT',
             'Side (Buy/Sell)': 'sell',
-            'Avg Buying/Selling Price(in base currency)': 0.005,
-            'Quantity': 2000.0,
-            'Gross Amount Paid/Received by the user(in base currency)': 10.0,
-            'Fees(in base currency)': 0.02,
-            'Net Amount Paid/Received by the user(in base currency)': 9.98,
-            '*Net Amount Paid/Received by the user (in INR)': 850.0,
-            '**TDS(in base currency)': 0.10,
-            '**TDS (in INR)': 8.5,
+            'Avg Buying/Selling Price(in base currency)': 0.004,
+            'Quantity': 5000.0,
+            'Gross Amount Paid/Received by the user(in base currency)': 20.0,
+            'Fees(in base currency)': 0.04,
+            'Net Amount Paid/Received by the user(in base currency)': 19.96,
+            '*Net Amount Paid/Received by the user (in INR)': 1796.4,
+            '**TDS(in base currency)': 0.2,
+            '**TDS (in INR)': 18.0,
         }
     )]))
 
@@ -247,15 +247,15 @@ def test_usdt_sell_splits_into_crypto_disposal_and_usdt_acquisition():
     zbcn_leg = next(t for t in calc.transactions if t.crypto == 'ZBCN')
     usdt_leg = next(t for t in calc.transactions if t.crypto == 'USDT')
 
-    rate = 850.0 / 9.98
+    rate = 1796.4 / 19.96
 
     assert zbcn_leg.side == 'SELL'
-    assert zbcn_leg.gross_amount == pytest.approx(10.0 * rate)
-    assert zbcn_leg.tds == pytest.approx(8.5)
+    assert zbcn_leg.gross_amount == pytest.approx(20.0 * rate)
+    assert zbcn_leg.tds == pytest.approx(18.0)
 
     assert usdt_leg.side == 'BUY'
-    assert usdt_leg.quantity == pytest.approx(9.98)
-    assert usdt_leg.gross_amount == pytest.approx(850.0)
+    assert usdt_leg.quantity == pytest.approx(19.96)
+    assert usdt_leg.gross_amount == pytest.approx(1796.4)
     assert usdt_leg.tds == pytest.approx(0.0)
 
 
@@ -303,13 +303,13 @@ def test_crypto_summary_separates_purchase_cost_from_cost_of_sold():
     calc.parse_instant_orders(pd.DataFrame([
         dict(INSTANT_CURRENT, **{
             'Crypto': 'BTC', 'Transaction time': '2025-04-01 10:00:00',
-            'Side (Buy/Sell)': 'Buy', 'Quantity': 0.002,
-            'Gross Amount Paid/Received by the user(in INR)': 10000.0,
+            'Side (Buy/Sell)': 'Buy', 'Quantity': 0.004,
+            'Gross Amount Paid/Received by the user(in INR)': 8000.0,
             'Fees(in INR)': 0.0,
         }),
         dict(INSTANT_CURRENT, **{
             'Crypto': 'BTC', 'Transaction time': '2025-05-01 10:00:00',
-            'Side (Buy/Sell)': 'Sell', 'Quantity': 0.001,
+            'Side (Buy/Sell)': 'Sell', 'Quantity': 0.002,
             'Gross Amount Paid/Received by the user(in INR)': 6000.0,
             'Fees(in INR)': 0.0,
         }),
@@ -319,11 +319,11 @@ def test_crypto_summary_separates_purchase_cost_from_cost_of_sold():
     summary = calc.generate_crypto_wise_summary().set_index('Crypto')
     btc = summary.loc['BTC']
 
-    assert btc['Total Purchase Cost (INR)'] == pytest.approx(10000.0)
-    assert btc['Cost Basis of Sold (INR)'] == pytest.approx(5000.0)
+    assert btc['Total Purchase Cost (INR)'] == pytest.approx(8000.0)
+    assert btc['Cost Basis of Sold (INR)'] == pytest.approx(4000.0)
     assert btc['Total Proceeds (INR)'] == pytest.approx(6000.0)
-    assert btc['Total P&L (INR)'] == pytest.approx(1000.0)
-    assert btc['Remaining Holdings'] == pytest.approx(0.001)
+    assert btc['Total P&L (INR)'] == pytest.approx(2000.0)
+    assert btc['Remaining Holdings'] == pytest.approx(0.002)
     # Sheet must be internally consistent.
     assert btc['Total P&L (INR)'] == pytest.approx(
         btc['Total Proceeds (INR)'] - btc['Cost Basis of Sold (INR)']
