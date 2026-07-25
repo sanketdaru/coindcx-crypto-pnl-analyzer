@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a capability or an improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you unable to do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: tax-basis
+    attributes:
+      label: Tax reasoning
+      description: >
+        If this changes how a figure is computed, cite the section or rule it
+        follows. Requests that change tax treatment without a citation are
+        unlikely to be accepted.
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Before submitting
+      options:
+        - label: I understand the maintainer may decline this without detailed explanation.
+          required: true

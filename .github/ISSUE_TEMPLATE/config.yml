@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Tax questions
+    url: https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/DISCLAIMER.md
+    about: This project cannot answer tax questions. Please consult a qualified tax professional.
+  - name: Usage help and support policy
+    url: https://github.com/sanketdaru/india-crypto-tax-calculator/blob/master/SUPPORT.md
+    about: Read this first — most reports are covered by the documented limitations.
+  - name: Report a security vulnerability
+    url: https://github.com/sanketdaru/india-crypto-tax-calculator/security/advisories/new
+    about: Report privately. Do not open a public issue.

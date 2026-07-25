@@ -1,0 +1,75 @@
+name: Bug report
+description: A wrong figure, a crash, or a parsing failure
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Redact before you post
+
+        **Never attach a real CoinDCX export, a generated report, or a screenshot
+        of either.** They contain your name, email, PAN and complete trading
+        history. A public issue is public forever and cannot be fully deleted.
+
+        Reproduce the problem with fabricated numbers instead.
+
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Personal data
+      options:
+        - label: I have removed all personal data from this report — name, email, PAN, transaction IDs, and real amounts.
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the fabricated rows needed to trigger it, if relevant.
+      placeholder: |
+        1. Instant Orders row: BUY 0.001 BTC, gross 5000, fees 29.5
+        2. Spot Orders row: SELL ...
+        3. Run: python crypto_pnl_calculator.py transactions.xlsx
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Console output
+      description: Paste the error or warning. Redact any real figures.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Output of: git rev-parse --short HEAD"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: "Output of: python --version"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have read DISCLAIMER.md and confirmed this is not one of the transaction types the tool deliberately does not handle.
+          required: true
+        - label: I understand this project is maintained on a best-effort basis with no SLA.
+          required: true
